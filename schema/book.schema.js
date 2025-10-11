@@ -3,51 +3,46 @@ const { Schema, model } = require("mongoose");
 const BookSchema = new Schema({
   title: {
     type: String,
-    required: true,
-    minlength: 3,
-    maxlength: 10000,
-    trim: true
+    required: [true, "Kitob nomi majburiy"],
+    trim: true,
+    minlength: [2, "Kitob nomi kamida 2 ta belgidan iborat bo‘lishi kerak"]
   },
   author: {
     type: String,
-    required: true,
-    trim: true
+    required: [true, "Muallif nomi majburiy"]
   },
   genre: {
     type: String,
-    required: true,
-    enum: [
-      'Fiction', 'Non-Fiction', 'Science', 'History',
-      'Biography', 'Fantasy', 'Mystery', 'Romance',
-      'Thriller', 'Horror', 'Self-Help', 'Other'
-    ]
+    required: [true, "Janr majburiy"]
   },
   pages: {
     type: Number,
-    required: true,
-    min: 1,
-    max: 10000
+    min: [1, "Kitob sahifalari soni 1 dan kam bo‘lishi mumkin emas"],
+    required: [true, "Sahifalar soni majburiy"]
   },
   published_year: {
     type: Date,
-    required: true
+    required: [true, "Nashr yili majburiy"],
+    validate: {
+      validator: function (v) {
+        return v <= new Date();
+      },
+      message: "Nashr sanasi kelajakda bo‘lishi mumkin emas"
+    }
   },
   description: {
     type: String,
-    required: true,
-    trim: true,
-    match: /^[\p{L}\p{N}\s.,'"‘’\-–!?]+$/u
+    maxlength: [1000, "Tavsif 1000 belgidan oshmasligi kerak"]
   },
   img: {
     type: String,
-    required: true
+    default: "",
   },
- author_info: {
-  type: Schema.Types.ObjectId,
-  ref: "Author",
-  required: true
-}
-
+  author_info: {
+    type: Schema.Types.ObjectId,
+    ref: "Author",
+    required: [true, "Muallif ID majburiy"]
+  }
 }, {
   timestamps: true
 });
