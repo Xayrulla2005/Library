@@ -12,8 +12,8 @@ const getAllAuthors = async (req, res) => {
 
 const addAuthor = async (req, res) => {
     try {
-        const { full_name, birth_date, death_date, img, bio, period, region,cretivity } = req.body
-        await AuthorSchema.create({ full_name, birth_date, death_date, img, bio, period, region ,cretivity})
+        const { full_name, birth_date, death_date, img, bio, period, region,creativity } = req.body
+        await AuthorSchema.create({ full_name, birth_date, death_date, img, bio, period, region ,creativity})
         res.status(200).json({
             message: "Added new author"
         })
@@ -51,7 +51,7 @@ const updateAuthor = async (req, res) => {
             })
         }
         await AuthorSchema.findByIdAndUpdate(id,{ full_name, birth_date, death_date, img, bio, period, region })
-        res.status(201).json({
+        res.status(200).json({
                 message: "Update author"
             })
     } catch (error) {
@@ -70,7 +70,7 @@ const deleteAuthor = async (req, res) => {
             })
         }
         await AuthorSchema.findByIdAndDelete(id)
-        res.status(201).json({
+        res.status(200).json({
                 message: "Author deleted"
             })
 

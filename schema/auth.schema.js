@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema({
   username: {
@@ -17,11 +17,24 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  otp: {
+    type: String,
+    required: true,
+  },
+  isVerified: {
+    type: Boolean,
+   default:false,
+  },
+  otpTime: {
+    type: Date,
+    default:false,
+  },
   role: {
     type: String,
-    enum: ["student", "admin"],
-    default: "student",
+    enum:["user","admin","superadmin"],
+    
+    default: "user",
   },
 }, { timestamps: true });
 
-export default mongoose.model("User", userSchema);
+module.exports = mongoose.model("User", userSchema);

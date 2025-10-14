@@ -28,7 +28,7 @@ const AuthorSchema = new Schema({
     type: String,
     maxlength: [1000, "Biografiya 1000 belgidan oshmasligi kerak"]
   },
-  cretivity: {
+  creativity: {
     type: String,
     trim: true,
   },

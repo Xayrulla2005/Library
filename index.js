@@ -1,10 +1,11 @@
 const express = require("express");
 const cors = require("cors");
 const connectDB = require("./config/db");
-const AuthorRouter = require("./router/author.router");
+const AuthorRouter = require("./router/auth.router");
 const BookRouter = require("./router/book.router");
 const UploadRouter = require("./router/upload.router");
-const AuthRouter = require("./router/auth.router"); // ✅ Auth router alohida bo‘ladi
+const AuthRouter = require("./router/auth.router"); 
+const LibraryBookRouter = require("./router/libraryBook.router");
 
 require("dotenv").config();
 
@@ -21,7 +22,9 @@ connectDB();
 app.use("/api/auth", AuthRouter);     
 app.use("/api/author", AuthorRouter); 
 app.use("/api/book", BookRouter);     
-app.use("/api/upload", UploadRouter); 
+app.use("/api", UploadRouter);
+app.use("/api/librarybooks", LibraryBookRouter);
+
 
 
 app.listen(PORT, () => {
