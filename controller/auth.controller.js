@@ -55,12 +55,16 @@ const login = async (req, res, next) => {
     }
 
     const payload = { id: user._id, email: user.email, role: user.role };
-    const token = jwt.sign(payload, process.env.SECRET_KEY, { expiresIn: "1h" });
 
-    res.status(200).json({
-      message: "Success",
-      token,
-    });
+const accessToken = jwt.sign(payload, process.env.SECRET_KEY, { expiresIn: "1h" });
+const refreshToken = jwt.sign(payload, process.env.REFRESH_SECRET, { expiresIn: "15d" });
+
+res.status(200).json({
+  message: "Success",
+  access_token: accessToken,
+  refresh_token: refreshToken,
+});
+
   } catch (error) {
     next(error);
   }
@@ -111,10 +115,39 @@ const addAdmin = async (req, res, next) => {
   }
 };
 
+
+/// LOGOUT
+const logout = async (req, res, next) => {
+  try {
+    const { refresh_token } = req.body;
+
+    if (!refresh_token) {
+      throw CustomErrorHendler.BadRequest("Refresh token not found");
+    }
+
+    const user = await User.findOne({ refreshToken: refresh_token });
+    if (!user) {
+      throw CustomErrorHendler.NotFound("User not found or invalid token");
+    }
+
+    user.refreshToken = null;
+    await user.save();
+
+    res.status(200).json({
+      message: "User successfully logged out",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+
 /// EXPORT
 module.exports = {
   register,
   login,
   addAdmin,
-  verifay
+  verifay,
+  logout
 };
