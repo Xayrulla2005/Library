@@ -1,87 +1,63 @@
-const bcryptjs = require("bcryptjs");
 const User = require("../schema/auth.schema");
-const CustomErrorHendler = require("../error/custom.error.handlaer");
+const CustomErrorHandler = require("../error/custom.error.handler");
+const bcrypt = require("bcryptjs");
 
-/// USER PROFILE
-const getMyProfile = async (req, res, next) => {
+// ===================== GET PROFILE =====================
+const getProfile = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id).select("-password -otp -__v");
-    if (!user) {
-      throw CustomErrorHendler.NotFound("Foydalanuvchi topilmadi");
-    }
-    res.status(200).json({ profile: user });
+    const user = await User.findById(req.user.id).select("-password");
+    if (!user) return next(CustomErrorHandler.NotFound("User not found"));
+
+    res.status(200).json({ success: true, data: user });
   } catch (error) {
     next(error);
   }
 };
 
-/// UPDATE PASSWORD
-const updateMyProfile = async (req, res, next) => {
+// ===================== UPDATE PROFILE =====================
+const updateProfile = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id);
-    if (!user) throw CustomErrorHendler.NotFound("Foydalanuvchi topilmadi");
+    const updates = req.body;
 
-    const { username, email } = req.body;
+    const updatedUser = await User.findByIdAndUpdate(req.user.id, updates, {
+      new: true,
+      runValidators: true,
+    }).select("-password");
 
-    if (username) user.username = username;
-    if (email && email !== user.email) {
-      const exist = await User.findOne({ email });
-      if (exist) throw CustomErrorHendler.AlreadyExist("Bu email allaqachon mavjud");
-      user.email = email;
-    }
-
-    if (req.file) {
-      user.img = `/uploads/${req.file.filename}`;
-    }
-
-    await user.save();
+    if (!updatedUser) return next(CustomErrorHandler.NotFound("User not found"));
 
     res.status(200).json({
-      message: "Profil yangilandi",
-      profile: {
-        username: user.username,
-        email: user.email,
-        img: user.img,
-      },
+      success: true,
+      message: "Profile updated successfully",
+      data: updatedUser,
     });
   } catch (error) {
     next(error);
   }
 };
 
-/// CHANGE PASSWORD
+// ===================== CHANGE PASSWORD =====================
 const changePassword = async (req, res, next) => {
   try {
-    const { oldPassword, newPassword, confirmPassword } = req.body;
-
-    if (!oldPassword || !newPassword || !confirmPassword) {
-      throw CustomErrorHendler.BadRequest("Barcha maydonlar to‘ldirilishi kerak");
-    }
-
-    if (newPassword !== confirmPassword) {
-      throw CustomErrorHendler.BadRequest("Yangi parol va tasdiqlovchi parol bir xil emas");
-    }
+    const { oldPassword, newPassword } = req.body;
 
     const user = await User.findById(req.user.id);
-    if (!user) throw CustomErrorHendler.NotFound("Foydalanuvchi topilmadi");
+    if (!user) return next(CustomErrorHandler.NotFound("User not found"));
 
-    const isMatch = await bcryptjs.compare(oldPassword, user.password);
-    if (!isMatch) {
-      throw CustomErrorHendler.UnAuthorazed("Eski parol noto‘g‘ri");
-    }
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch)
+      return next(CustomErrorHandler.BadRequest("Old password is incorrect"));
 
-    const hashed = await bcryptjs.hash(newPassword, 12);
-    user.password = hashed;
+    user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
 
-    res.status(200).json({ message: "Parol muvaffaqiyatli o‘zgartirildi" });
+    res.status(200).json({
+      success: true,
+      message: "Password changed successfully",
+    });
   } catch (error) {
     next(error);
   }
 };
 
-module.exports = {
-  getMyProfile,
-  updateMyProfile,
-  changePassword,
-};
+module.exports = { getProfile, updateProfile, changePassword };

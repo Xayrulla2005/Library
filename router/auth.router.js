@@ -1,16 +1,11 @@
-const { Router } = require("express");
-const { register, login, addAdmin ,verifay} = require("../controller/auth.controller");
-const { validate } = require("../schema/author.schema");
-const { registerValidator, loginValidator, verifyValidator } = require("../validator/auth.validator");
-const refreshToken = require("../midlware/refresh.token");
+const express = require("express");
+const router = express.Router();
+const { register, login, addAdmin } = require("../controller/auth.controller");
+const authMiddleware = require("../middleware/auth.middleware");
+const adminCheck = require("../middleware/admin.middleware");
 
-const AuthRouter = Router();
+router.post("/register", register);
+router.post("/login", login);
+router.post("/add-admin", authMiddleware, adminCheck, addAdmin);
 
-AuthRouter.post("/register",validate(registerValidator), register);
-AuthRouter.post("/login",validate(loginValidator), login);
-AuthRouter.post("/add-admin", addAdmin);
-AuthRouter.post("/verify",validate(verifyValidator), verifay);
-AuthRouter.post("/refresh", refreshToken);
-AuthRouter.post("/logout", logout);
-
-module.exports = AuthRouter;
+module.exports = router;

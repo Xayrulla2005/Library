@@ -1,18 +1,15 @@
-const {Router} = require('express')
-const{ getAllAuthors, search, getOneAuthor, addAuthor, updateAuthor,deleteAuthor }=require("../controller/author.controller")
-const { validate } = require('../schema/author.schema')
-const authorValidator = require('../validator/author.validator')
+const express = require("express");
+const router = express.Router();
+const { getAllAuthors, addAuthor, updateAuthor, deleteAuthor } = require("../controller/author.controller");
+const authMiddleware = require("../middleware/auth.middleware");
+const adminCheck = require("../middleware/admin.middleware");
 
-const AuthorRouter = Router()
+// Public route — everyone can view authors
+router.get("/", getAllAuthors);
 
+// Protected routes — only admin
+router.post("/", authMiddleware, adminCheck, addAuthor);
+router.put("/:id", authMiddleware, adminCheck, updateAuthor);
+router.delete("/:id", authMiddleware, adminCheck, deleteAuthor);
 
-AuthorRouter.get("/get_all_authors", getAllAuthors)
-AuthorRouter.get("/search", search)
-AuthorRouter.get("/get_one_author/:id", getOneAuthor)
-AuthorRouter.post("/add_author",validate(authorValidator), addAuthor)
-AuthorRouter.put("/update_author/:id", updateAuthor)
-AuthorRouter.delete("/delete_author/:id", deleteAuthor)
-
-
-
-module.exports = AuthorRouter
+module.exports = router;

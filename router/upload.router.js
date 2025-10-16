@@ -1,7 +1,10 @@
 const express = require("express");
-const { upload, uploadFile } = require("../controller/upload.controller");
 const router = express.Router();
+const upload = require("../middleware/upload.middware");
+const { uploadFile } = require("../controller/upload.controller");
+const authMiddleware = require("../middleware/auth.middleware");
 
-router.post("/upload", upload.single("file"), uploadFile);
+
+router.post("/", authMiddleware, upload.single("file"), uploadFile);
 
 module.exports = router;

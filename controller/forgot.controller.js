@@ -1,68 +1,72 @@
-const bcryptjs = require("bcryptjs");
 const User = require("../schema/auth.schema");
-const CustomErrorHendler = require("../error/custom.error.handlaer");
-const sendOtp = require("../utils/send-otp"); 
+const CustomErrorHandler = require("../error/custom.error.handler");
+const nodemailer = require("nodemailer");
+const bcrypt = require("bcryptjs");
 
-/// 1️⃣ FORGOT PASSWORD
-const forgotPassword = async (req, res, next) => {
+// Temporarily OTP'larni saqlash (real loyihada Redis ishlatiladi)
+const otpStore = {};
+
+// Nodemailer setup
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
+
+// ===================== SEND OTP =====================
+const sendOTP = async (req, res, next) => {
   try {
     const { email } = req.body;
-
-    if (!email) throw CustomErrorHendler.BadRequest("Email kiritilishi kerak");
-
     const user = await User.findOne({ email });
-    if (!user) throw CustomErrorHendler.NotFound("Bunday foydalanuvchi topilmadi");
+    if (!user) return next(CustomErrorHandler.NotFound("Email not found"));
 
+    const otp = Math.floor(100000 + Math.random() * 900000); // 6 digit OTP
+    otpStore[email] = otp;
 
-    const otp = Array.from({ length: 6 }, () => Math.floor(Math.random() * 10)).join("");
-   
-    await sendOtp(email, otp);
-    user.otp = otp;
-    user.otpTime = Date.now();
-    await user.save();
+    await transporter.sendMail({
+      from: process.env.SMTP_USER,
+      to: email,
+      subject: "Password Reset OTP",
+      text: `Your OTP code is ${otp}. It will expire in 5 minutes.`,
+    });
 
-    res.status(200).json({ message: "Emailga tasdiqlash kodi yuborildi" });
+    // OTP 5 daqiqada o‘chadi
+    setTimeout(() => delete otpStore[email], 5 * 60 * 1000);
+
+    res.status(200).json({
+      success: true,
+      message: "OTP sent to your email",
+    });
   } catch (error) {
     next(error);
   }
 };
 
-
-/// CHECK OTP
-const resetPassword = async (req, res, next) => {
+// ===================== VERIFY OTP =====================
+const verifyOTP = async (req, res, next) => {
   try {
-    const { email, otp, newPassword, confirmPassword } = req.body;
+    const { email, otp, newPassword } = req.body;
 
-    if (!email || !otp || !newPassword || !confirmPassword) {
-      throw CustomErrorHendler.BadRequest("Barcha maydonlar to‘ldirilishi kerak");
-    }
+    if (otpStore[email] != otp)
+      return next(CustomErrorHandler.BadRequest("Invalid or expired OTP"));
 
     const user = await User.findOne({ email });
-    if (!user) throw CustomErrorHendler.NotFound("Foydalanuvchi topilmadi");
+    if (!user) return next(CustomErrorHandler.NotFound("User not found"));
 
-    if (user.otp !== otp) {
-      throw CustomErrorHendler.BadRequest("OTP noto‘g‘ri kiritildi");
-    }
-
-    const diff = Date.now() - user.otpTime;
-    if (diff > 5 * 60 * 1000) {
-      throw CustomErrorHendler.BadRequest("OTP muddati tugagan, qayta urinib ko‘ring");
-    }
-
-    if (newPassword !== confirmPassword) {
-      throw CustomErrorHendler.BadRequest("Yangi parol va tasdiqlovchi parol mos emas");
-    }
-
-    const hashed = await bcryptjs.hash(newPassword, 12);
-    user.password = hashed;
-    user.otp = null; 
-    user.otpTime = null;
+    user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
 
-    res.status(200).json({ message: "Parol muvaffaqiyatli yangilandi" });
+    delete otpStore[email];
+
+    res.status(200).json({
+      success: true,
+      message: "Password reset successfully",
+    });
   } catch (error) {
     next(error);
   }
 };
 
-module.exports = { forgotPassword, resetPassword };
+module.exports = { sendOTP, verifyOTP };

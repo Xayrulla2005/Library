@@ -1,27 +1,12 @@
-const mongoose = require("mongoose");
+const { Schema, model } = require("mongoose");
 
-const LibraryBookSchema = new mongoose.Schema(
+const libraryBookSchema = new Schema(
   {
     title: { type: String, required: true },
-    author: { type: String, required: true },
-    year: Number,
-    genre: {
-      type: String,
-      enum: ["Drama", "Fantasy", "Romance", "Detective", "Other"],
-      default: "Other",
-    },
-    quotes: [
-      {
-        text: { type: String, required: true },
-        addedBy: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "User",
-        },
-        addedAt: { type: Date, default: Date.now },
-      },
-    ],
+    author: { type: Schema.Types.ObjectId, ref: "Author", required: true },
+    availableCopies: { type: Number, default: 1, min: [0, "Copies cannot be negative"] },
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model("LibraryBook", LibraryBookSchema);
+module.exports = model("LibraryBook", libraryBookSchema);

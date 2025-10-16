@@ -1,41 +1,36 @@
 const express = require("express");
+const path = require("path");
 const cors = require("cors");
-const connectDB = require("./config/db");
-const AuthorRouter = require("./router/auth.router");
-const BookRouter = require("./router/book.router");
-const UploadRouter = require("./router/upload.router");
-const AuthRouter = require("./router/auth.router"); 
-const LibraryBookRouter = require("./router/libraryBook.router");
-const AudioBookRouter = require("./router/audioBook.router");
-const PDFBookRouter = require("./router/pdfBook.router");
-const ProfileRouter = require("./router/profile.router");
-const ForgotRouter = require("./router/forgot.router");
-
-
-
 require("dotenv").config();
+const connectDB = require("./config/db");
+const errorMiddleware = require("./middleware/error.middlware");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Middleware
 app.use(cors());
 app.use(express.json());
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// MongoDB
+// Database
 connectDB();
 
-// Router
-app.use("/api/auth", AuthRouter);     
-app.use("/api/author", AuthorRouter); 
-app.use("/api/book", BookRouter);     
-app.use("/api", UploadRouter);
-app.use("/api/librarybooks", LibraryBookRouter);
-app.use("/api/audiobooks", AudioBookRouter);
-app.use("/api/pdfbooks", PDFBookRouter);
-app.use("/api/profile", ProfileRouter);
-app.use("/api/password", ForgotRouter);
+// Routers
+app.use("/api/token", require("./router/token.router"));
+app.use("/api/auth", require("./router/auth.router"));
+app.use("/api/authors", require("./router/author.router"));
+app.use("/api/books", require("./router/book.router"));
+app.use("/api/upload", require("./router/upload.router"));
+app.use("/api/librarybooks", require("./router/libraryBook.router"));
+app.use("/api/audiobooks", require("./router/audioBook.router"));
+app.use("/api/pdfbooks", require("./router/pdfBook.router"));
+app.use("/api/profile", require("./router/profile.router"));
+app.use("/api/password", require("./router/forgot.router"));
+const CustomErrorHandler = require("./error/custom.error.handler");
 
+// Error handler
+app.use(errorMiddleware);
 
-app.listen(PORT, () => {
-  console.log(" Server is run at: " + PORT);
-});
+// Start server
+app.listen(PORT, () => console.log(`🚀 Server is running on port ${PORT}`));

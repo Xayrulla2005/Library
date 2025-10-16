@@ -1,18 +1,11 @@
 const express = require("express");
 const router = express.Router();
-const {
-  getAllPDFBooks,
-  getPDFBookById,
-  addPDFBook,
-  updatePDFBook,
-  deletePDFBook
-} = require("../controller/pdfBook.controller");
-
+const { getAllPDFBooks, addPDFBook, deletePDFBook } = require("../controller/pdfBook.controller");
+const authMiddleware = require("../middleware/auth.middleware");
+const adminMiddleware = require("../middleware/admin.middleware");
 
 router.get("/", getAllPDFBooks);
-router.get("/:id", getPDFBookById);
-router.post("/", addPDFBook);
-router.put("/:id", updatePDFBook);
-router.delete("/:id", deletePDFBook);
+router.post("/", authMiddleware, adminMiddleware, addPDFBook);
+router.delete("/:id", authMiddleware, adminMiddleware, deletePDFBook);
 
 module.exports = router;

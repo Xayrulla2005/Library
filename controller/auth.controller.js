@@ -1,153 +1,102 @@
-const bcryptjs = require("bcryptjs");
-const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
 const User = require("../schema/auth.schema");
-const CustomErrorHendler = require("../error/custom.error.handlaer");
-const sendOtp = require("../utils/send-otp");
+const Token = require("../schema/token.schema");
+const CustomErrorHandler = require("../error/custom.error.handler");
+const { generateTokens } = require("../utils/token");
+const nodemailer = require("nodemailer"); 
 
-/// REGISTER
+// Nodemailer config
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
+
+// ===================== REGISTER =====================
 const register = async (req, res, next) => {
   try {
     const { username, email, password } = req.body;
 
-    const foundeduser = await User.findOne({ email });
-    if (foundeduser) {
-      throw CustomErrorHendler.AlreadyExist("Bu email avval ro'yxatdan o'tgan!");
-    }
+    const existUser = await User.findOne({ email });
+    if (existUser) return next(CustomErrorHandler.badRequest("Email already registered"));
 
-    const hashedPassword = await bcryptjs.hash(password, 12);
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await User.create({ username, email, password: hashedPassword });
 
-    
-    const randumNum = Array.from({ length: 6 }, () => Math.floor(Math.random() * 10)).join('');
+    const tokens = generateTokens(user);
 
-    sendOtp(email, randumNum);
+    // Tokenni saqlash
+    await Token.create({ user: user._id, refreshToken: tokens.refreshToken });
 
-    const newUser = new User({
-      username,
-      email,
-      password: hashedPassword,
-      otp: randumNum,
-      otpTime: Date.now(),
+    // <<< Nodemailer bilan email jo'natish >>>
+    const verificationCode = Math.floor(100000 + Math.random() * 900000); // 6 raqamli
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Verify your email",
+      text: `Your verification code is: ${verificationCode}`,
     });
 
-    await newUser.save();
-
     res.status(201).json({
-      message: "Registered successfully, check your email for OTP",
+      success: true,
+      message: "User registered successfully. Verification code sent to email.",
+      ...tokens,
     });
   } catch (error) {
     next(error);
   }
 };
 
-/// LOGIN
+// ===================== LOGIN =====================
 const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
     const user = await User.findOne({ email });
-    if (!user) {
-      throw CustomErrorHendler.NotFound("User not found");
-    }
+    if (!user) return next(CustomErrorHandler.unauthorized("Invalid email or password"));
 
-    const isMatch = await bcryptjs.compare(password, user.password);
-    if (!isMatch) {
-      throw CustomErrorHendler.UnAuthorazed("Invalid password");
-    }
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return next(CustomErrorHandler.unauthorized("Invalid email or password"));
 
-    const payload = { id: user._id, email: user.email, role: user.role };
+    const tokens = generateTokens(user);
 
-const accessToken = jwt.sign(payload, process.env.SECRET_KEY, { expiresIn: "1h" });
-const refreshToken = jwt.sign(payload, process.env.REFRESH_SECRET, { expiresIn: "15d" });
+    await Token.findOneAndUpdate(
+      { userId: user._id },
+      { refreshToken: tokens.refreshToken },
+      { upsert: true }
+    );
 
-res.status(200).json({
-  message: "Success",
-  access_token: accessToken,
-  refresh_token: refreshToken,
-});
-
+    res.status(200).json({
+      success: true,
+      message: "Login successful",
+      ...tokens,
+    });
   } catch (error) {
     next(error);
   }
 };
 
-/// VERIFY OTP
-const verifay = async (req, res, next) => {
-  try {
-    const { email, otp } = req.body;
-
-    const user = await User.findOne({ email });
-    if (!user) {
-      throw CustomErrorHendler.NotFound("User not found");
-    }
-
-    if (user.otp !== otp) {
-      throw CustomErrorHendler.BadRequest("OTP xato kiritildi");
-    }
-
-    user.isVerified = true;
-    user.otp = null;
-    await user.save();
-
-    res.status(200).json({ message: "User verified successfully" });
-  } catch (error) {
-    next(error);
-  }
-};
-
-/// ADD ADMIN
+// ===================== ADD ADMIN =====================
 const addAdmin = async (req, res, next) => {
   try {
-    const { email, role } = req.body;
+    const { username, email, password } = req.body;
 
-    const user = await User.findOne({ email });
-    if (!user) {
-      throw CustomErrorHendler.NotFound("User not found");
-    }
+    const existUser = await User.findOne({ email });
+    if (existUser) return next(CustomErrorHandler.badRequest("Email already registered"));
 
-    user.role = role;
-    await user.save();
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await User.create({ username, email, password: hashedPassword, role: "admin" });
 
-    res.status(200).json({
-      message: "Role updated successfully",
+    res.status(201).json({
+      success: true,
+      message: "Admin added successfully",
+      user,
     });
   } catch (error) {
     next(error);
   }
 };
 
-
-/// LOGOUT
-const logout = async (req, res, next) => {
-  try {
-    const { refresh_token } = req.body;
-
-    if (!refresh_token) {
-      throw CustomErrorHendler.BadRequest("Refresh token not found");
-    }
-
-    const user = await User.findOne({ refreshToken: refresh_token });
-    if (!user) {
-      throw CustomErrorHendler.NotFound("User not found or invalid token");
-    }
-
-    user.refreshToken = null;
-    await user.save();
-
-    res.status(200).json({
-      message: "User successfully logged out",
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-
-
-/// EXPORT
-module.exports = {
-  register,
-  login,
-  addAdmin,
-  verifay,
-  logout
-};
+module.exports = { register, login, addAdmin };

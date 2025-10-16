@@ -1,42 +1,38 @@
 const LibraryBook = require("../schema/libraryBook.schema");
+const Author = require("../schema/author.schema");
+const CustomErrorHandler = require("../error/custom.error.handler");
 
-// GET ALL
-const getBooks = async (req, res, next) => {
+const getAllLibraryBooks = async (req, res, next) => {
   try {
-    const books = await LibraryBook.find();
-    res.json(books);
+    const books = await LibraryBook.find().populate("author", "name");
+    res.status(200).json({ success: true, count: books.length, data: books });
   } catch (error) {
     next(error);
   }
 };
 
-//ADD BOOK
-const addBook = async (req, res, next) => {
+const addLibraryBook = async (req, res, next) => {
   try {
-    const { title, author, year, genre } = req.body;
-    const book = await LibraryBook.create({ title, author, year, genre });
-    res.status(201).json(book);
+    const { title, author, availableCopies } = req.body;
+
+    const authorExist = await Author.findById(author);
+    if (!authorExist) return next(CustomErrorHandler.NotFound("Author not found"));
+
+    const newBook = await LibraryBook.create({ title, author, availableCopies });
+    res.status(201).json({ success: true, message: "Library book added", data: newBook });
   } catch (error) {
     next(error);
   }
 };
 
-//ADD QUOTE
-const addQuote = async (req, res, next) => {
+const deleteLibraryBook = async (req, res, next) => {
   try {
-    const { bookId } = req.params;
-    const { text } = req.body;
-
-    const book = await LibraryBook.findById(bookId);
-    if (!book) return res.status(404).json({ message: "Kitob topilmadi" });
-
-    book.quotes.push({ text, addedBy: req.user.id });
-    await book.save();
-
-    res.json({ message: "Iqtibos qo‘shildi", book });
+    const deleted = await LibraryBook.findByIdAndDelete(req.params.id);
+    if (!deleted) return next(CustomErrorHandler.NotFound("Library book not found"));
+    res.status(200).json({ success: true, message: "Library book deleted" });
   } catch (error) {
     next(error);
   }
 };
 
-module.exports = { getBooks, addBook, addQuote };
+module.exports = { getAllLibraryBooks, addLibraryBook, deleteLibraryBook };
