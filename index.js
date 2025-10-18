@@ -1,17 +1,24 @@
 const express = require("express");
 const path = require("path");
+const YAML = require("yamljs");
 const cors = require("cors");
 require("dotenv").config();
 const connectDB = require("./config/db");
 const errorMiddleware = require("./middleware/error.middlware");
+const swaggerUi = require("swagger-ui-express");
+const swaggerDocument = YAML.load("./docs/documentation.yml")
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+
+
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Database
 connectDB();
@@ -27,10 +34,9 @@ app.use("/api/audiobooks", require("./router/audioBook.router"));
 app.use("/api/pdfbooks", require("./router/pdfBook.router"));
 app.use("/api/profile", require("./router/profile.router"));
 app.use("/api/password", require("./router/forgot.router"));
-const CustomErrorHandler = require("./error/custom.error.handler");
 
 // Error handler
 app.use(errorMiddleware);
 
 // Start server
-app.listen(PORT, () => console.log(`🚀 Server is running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));

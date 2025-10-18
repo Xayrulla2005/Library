@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { getProfile, updateProfile, changePassword } = require("../controller/prfile.controller");
+const { getProfile, updateProfile, changePassword } = require("../controller/profile.controller");
 const authMiddleware = require("../middleware/auth.middleware");
 
 router.get("/", authMiddleware, getProfile);
