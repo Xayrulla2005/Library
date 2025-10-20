@@ -6,13 +6,11 @@ require("dotenv").config();
 const connectDB = require("./config/db");
 const errorMiddleware = require("./middleware/error.middlware");
 const swaggerUi = require("swagger-ui-express");
-const swaggerDocument = YAML.load("./docs/documentation.yml")
+const swaggerDocument = YAML.load(path.join(__dirname, "docs", "documentation.yml"));
+const logger = require("./utils/logger"); 
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-
-
 
 // Middleware
 app.use(cors());
@@ -21,7 +19,9 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Database
-connectDB();
+connectDB()
+  .then(() => logger.info("Database connected successfully"))
+  .catch((err) => logger.error(`Database connection error: ${err.message}`));
 
 // Routers
 app.use("/api/token", require("./router/token.router"));
@@ -38,5 +38,5 @@ app.use("/api/password", require("./router/forgot.router"));
 // Error handler
 app.use(errorMiddleware);
 
-// Start server
-app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
+
+app.listen(PORT, () => logger.info(`Server running on port ${PORT}`));

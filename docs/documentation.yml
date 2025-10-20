@@ -21,10 +21,7 @@ paths:
           application/json:
             schema:
               type: object
-              required:
-                - username
-                - email
-                - password
+              required: [username, email, password]
               properties:
                 username:
                   type: string
@@ -52,9 +49,7 @@ paths:
           application/json:
             schema:
               type: object
-              required:
-                - email
-                - password
+              required: [email, password]
               properties:
                 email:
                   type: string
@@ -81,10 +76,7 @@ paths:
           application/json:
             schema:
               type: object
-              required:
-                - username
-                - email
-                - password
+              required: [username, email, password]
               properties:
                 username:
                   type: string
@@ -195,10 +187,7 @@ paths:
           application/json:
             schema:
               type: object
-              required:
-                - title
-                - author
-                - audioUrl
+              required: [title, author, audioUrl]
               properties:
                 title:
                   type: string
@@ -211,6 +200,7 @@ paths:
       responses:
         '201':
           description: Audio book added
+  /api/audiobooks/{id}:
     delete:
       summary: Delete an audiobook (Admin only)
       tags:
@@ -248,10 +238,7 @@ paths:
           application/json:
             schema:
               type: object
-              required:
-                - title
-                - author
-                - pdfUrl
+              required: [title, author, pdfUrl]
               properties:
                 title:
                   type: string
@@ -262,6 +249,7 @@ paths:
       responses:
         '201':
           description: PDF book added
+  /api/pdfbooks/{id}:
     delete:
       summary: Delete a PDF book (Admin only)
       tags:
@@ -299,10 +287,7 @@ paths:
           application/json:
             schema:
               type: object
-              required:
-                - title
-                - author
-                - availableCopies
+              required: [title, author, availableCopies]
               properties:
                 title:
                   type: string
@@ -313,6 +298,7 @@ paths:
       responses:
         '201':
           description: Library book added
+  /api/librarybooks/{id}:
     delete:
       summary: Delete a library book (Admin only)
       tags:
@@ -341,8 +327,7 @@ paths:
           application/json:
             schema:
               type: object
-              required:
-                - email
+              required: [email]
               properties:
                 email:
                   type: string
@@ -361,10 +346,7 @@ paths:
           application/json:
             schema:
               type: object
-              required:
-                - email
-                - otp
-                - newPassword
+              required: [email, otp, newPassword]
               properties:
                 email:
                   type: string
@@ -421,9 +403,7 @@ paths:
           application/json:
             schema:
               type: object
-              required:
-                - oldPassword
-                - newPassword
+              required: [oldPassword, newPassword]
               properties:
                 oldPassword:
                   type: string
@@ -445,8 +425,7 @@ paths:
           application/json:
             schema:
               type: object
-              required:
-                - refreshToken
+              required: [refreshToken]
               properties:
                 refreshToken:
                   type: string
@@ -465,8 +444,7 @@ paths:
           application/json:
             schema:
               type: object
-              required:
-                - refreshToken
+              required: [refreshToken]
               properties:
                 refreshToken:
                   type: string
